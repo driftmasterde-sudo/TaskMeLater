@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '@/store';
 import { Sidebar } from '@/components/Sidebar';
 import { FeaturesPage } from '@/components/FeaturesPage';
 import { ErrorsPage } from '@/components/ErrorsPage';
 import { DetailPanel } from '@/components/DetailPanel';
+import { PinLock } from '@/components/PinLock';
 
 export default function Home() {
   const initialize = useStore((s) => s.initialize);
@@ -16,13 +17,25 @@ export default function Home() {
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const setSidebarOpen = useStore((s) => s.setSidebarOpen);
 
+  const [authed, setAuthed] = useState(false);
+
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    if (typeof window !== 'undefined' && sessionStorage.getItem('taskmelater-auth') === 'true') {
+      setAuthed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authed) initialize();
+  }, [authed, initialize]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
+
+  if (!authed) {
+    return <PinLock onUnlock={() => setAuthed(true)} />;
+  }
 
   if (!initialized) {
     return (
