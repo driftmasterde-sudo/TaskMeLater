@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '@/store';
+import { PageComboInput } from '@/components/PageComboInput';
 import {
   PRIORITIES,
   FEATURE_STATES,
@@ -183,7 +184,7 @@ export function DetailPanel() {
               {detailCard.type === 'feature' ? (
                 <FeatureForm card={detailCard.card} labelClass={labelClass} inputClass={inputClass} selectClass={selectClass} updateFeature={updateFeature} dragOver={dragOver} setDragOver={setDragOver} onDrop={onDrop} onFileChange={onFileChange} fileInputRef={fileInputRef} mockupBlobUrl={mockupBlobUrl} />
               ) : (
-                <ErrorForm card={detailCard.card} labelClass={labelClass} inputClass={inputClass} selectClass={selectClass} updateError={updateError} pages={activeProject?.pages ?? []} copied={copied} copyPrompt={copyPrompt} />
+                <ErrorForm card={detailCard.card} labelClass={labelClass} inputClass={inputClass} selectClass={selectClass} updateError={updateError} pages={activeProject?.pages ?? []} copied={copied} copyPrompt={copyPrompt} updateProject={useStore.getState().updateProject} activeProjectId={activeProjectId} />
               )}
 
               {/* Timestamps */}
@@ -358,28 +359,30 @@ interface ErrorFormProps {
   inputClass: string;
   selectClass: string;
   updateError: (id: string, updates: Record<string, unknown>) => Promise<void>;
+  updateProject: (id: string, updates: Record<string, unknown>) => Promise<void>;
+  activeProjectId: string | null;
   pages: string[];
   copied: boolean;
   copyPrompt: () => void;
 }
 
-function ErrorForm({ card, labelClass, inputClass, selectClass, updateError, pages, copied, copyPrompt }: ErrorFormProps) {
+function ErrorForm({ card, labelClass, inputClass, selectClass, updateError, updateProject, activeProjectId, pages, copied, copyPrompt }: ErrorFormProps) {
   return (
     <>
       <div>
         <label className={labelClass}>Page</label>
-        <select
-          className={selectClass}
+        <PageComboInput
+          pages={pages}
           value={card.page}
-          onChange={(e) => updateError(card.id, { page: e.target.value })}
-        >
-          {pages.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-          {!pages.includes(card.page) && (
-            <option value={card.page}>{card.page}</option>
-          )}
-        </select>
+          onChange={(page) => updateError(card.id, { page })}
+          onAddPage={(page) => {
+            if (activeProjectId) {
+              updateProject(activeProjectId, { pages: [...pages, page] });
+            }
+          }}
+          className={selectClass}
+          placeholder="Select or type a page name..."
+        />
       </div>
 
       <div>

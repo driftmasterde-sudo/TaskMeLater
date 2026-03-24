@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useStore } from '@/store';
+import { PageComboInput } from '@/components/PageComboInput';
 import {
   PRIORITY_COLORS,
   ERROR_STATE_COLORS,
@@ -32,6 +33,7 @@ export function ErrorsPage() {
   const projects = useStore((s) => s.projects);
   const activeProjectId = useStore((s) => s.activeProjectId);
   const createError = useStore((s) => s.createError);
+  const updateProject = useStore((s) => s.updateProject);
   const setDetailCard = useStore((s) => s.setDetailCard);
 
   const activeProject = useMemo(
@@ -365,16 +367,20 @@ export function ErrorsPage() {
             <label htmlFor="error-page" className="block text-sm font-medium text-muted mb-1">
               Page
             </label>
-            <select
-              id="error-page"
-              value={newPage}
-              onChange={(e) => setNewPage(e.target.value)}
-              className={`w-full mb-4 ${inputClass}`}
-            >
-              {activeProject.pages.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            <div className="mb-4">
+              <PageComboInput
+                pages={activeProject.pages}
+                value={newPage}
+                onChange={setNewPage}
+                onAddPage={(page) => {
+                  if (activeProjectId) {
+                    updateProject(activeProjectId, { pages: [...activeProject.pages, page] });
+                  }
+                }}
+                className={`w-full ${inputClass}`}
+                placeholder="Select or type a new page name..."
+              />
+            </div>
 
             <label htmlFor="error-prompt" className="block text-sm font-medium text-muted mb-1">
               Prompt

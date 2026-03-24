@@ -86,7 +86,7 @@ export const useStore = create<AppState>((set, get) => ({
         const p = {
           id: uuid(),
           ...DEMO_PROJECTS[i],
-          pages: ['Dashboard', 'Settings', 'Profile'],
+          pages: [],
           order: i,
         };
         await api('/api/projects', { method: 'POST', body: JSON.stringify(p) });
@@ -131,7 +131,7 @@ export const useStore = create<AppState>((set, get) => ({
       name,
       color,
       icon,
-      pages: ['Dashboard', 'Settings', 'Profile'],
+      pages: [],
       order: get().projects.length,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -223,6 +223,21 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Errors
   createError: async (projectId, page, prompt) => {
+    // Auto-add page to project if it's new
+    const project = get().projects.find((p) => p.id === projectId);
+    if (project && !project.pages.includes(page)) {
+      const updatedPages = [...project.pages, page];
+      await api('/api/projects', {
+        method: 'PUT',
+        body: JSON.stringify({ id: projectId, pages: updatedPages }),
+      });
+      set((s) => ({
+        projects: s.projects.map((p) =>
+          p.id === projectId ? { ...p, pages: updatedPages } : p
+        ),
+      }));
+    }
+
     const error = {
       id: uuid(),
       projectId,
