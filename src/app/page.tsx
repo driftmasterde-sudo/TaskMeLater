@@ -25,9 +25,15 @@ export default function Home() {
     }
   }, []);
 
+  const startPolling = useStore((s) => s.startPolling);
+  const stopPolling = useStore((s) => s.stopPolling);
+
   useEffect(() => {
-    if (authed) initialize();
-  }, [authed, initialize]);
+    if (authed) {
+      initialize().then(() => startPolling());
+    }
+    return () => stopPolling();
+  }, [authed, initialize, startPolling, stopPolling]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);

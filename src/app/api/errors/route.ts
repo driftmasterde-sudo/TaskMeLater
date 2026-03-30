@@ -49,6 +49,18 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json(mapError(error));
 }
 
+// PATCH bulk update state
+export async function PATCH(req: NextRequest) {
+  await connectDB();
+  const { ids, state } = await req.json();
+  if (!Array.isArray(ids) || !state) {
+    return NextResponse.json({ error: 'ids[] and state required' }, { status: 400 });
+  }
+  await ErrorCard.updateMany({ _id: { $in: ids } }, { state });
+  const updated = await ErrorCard.find({ _id: { $in: ids } }).lean();
+  return NextResponse.json(updated.map(mapError));
+}
+
 // DELETE error
 export async function DELETE(req: NextRequest) {
   await connectDB();

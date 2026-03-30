@@ -33,6 +33,7 @@ export function ErrorsPage() {
   const projects = useStore((s) => s.projects);
   const activeProjectId = useStore((s) => s.activeProjectId);
   const createError = useStore((s) => s.createError);
+  const bulkUpdateErrorState = useStore((s) => s.bulkUpdateErrorState);
   const updateProject = useStore((s) => s.updateProject);
   const setDetailCard = useStore((s) => s.setDetailCard);
 
@@ -130,6 +131,12 @@ export function ErrorsPage() {
     setOpenPageMenu(null);
     setTimeout(() => setCopiedPageGroup(null), 2000);
   }, []);
+
+  const handleBulkStateChange = useCallback(async (cards: ErrorCard[], newState: ErrorState) => {
+    const ids = cards.map((c) => c.id);
+    await bulkUpdateErrorState(ids, newState);
+    setOpenPageMenu(null);
+  }, [bulkUpdateErrorState]);
 
   const handleCopy = useCallback(async (card: ErrorCard) => {
     try {
@@ -329,7 +336,7 @@ export function ErrorsPage() {
                     {openPageMenu === page && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setOpenPageMenu(null)} />
-                        <div className="absolute left-0 top-full mt-1 z-50 w-48 rounded-lg bg-card border border-card-border shadow-lg py-1">
+                        <div className="absolute left-0 top-full mt-1 z-50 w-56 rounded-lg bg-card border border-card-border shadow-lg py-1">
                           <button
                             onClick={() => handleCopyAllPrompts(page, cards)}
                             disabled={unfixedCount === 0}
@@ -341,6 +348,23 @@ export function ErrorsPage() {
                             </svg>
                             Copy all Prompts ({unfixedCount})
                           </button>
+                          <div className="border-t border-card-border my-1" />
+                          <div className="px-3 py-1.5 text-xs font-semibold text-muted uppercase tracking-wide">
+                            Set all to...
+                          </div>
+                          {ERROR_STATES.map((st) => (
+                            <button
+                              key={st}
+                              onClick={() => handleBulkStateChange(cards, st)}
+                              className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-muted-bg transition cursor-pointer flex items-center gap-2"
+                            >
+                              <span
+                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: ERROR_STATE_COLORS[st] }}
+                              />
+                              {st}
+                            </button>
+                          ))}
                         </div>
                       </>
                     )}

@@ -50,11 +50,18 @@ interface AppState {
   // Error CRUD
   createError: (projectId: string, page: string, prompt: string) => Promise<void>;
   updateError: (id: string, updates: Partial<Pick<ErrorCard, 'page' | 'prompt' | 'priority' | 'state'>>) => Promise<void>;
+  bulkUpdateErrorState: (ids: string[], state: ErrorCard['state']) => Promise<void>;
   deleteError: (id: string) => Promise<void>;
 
   // Data management
   exportData: () => Promise<string>;
   importData: (json: string) => Promise<void>;
+
+  // Real-time sync
+  _pollTimer: ReturnType<typeof setInterval> | null;
+  startPolling: () => void;
+  stopPolling: () => void;
+  syncFromServer: () => Promise<void>;
 }
 
 const DEMO_PROJECTS = [
@@ -268,6 +275,23 @@ export const useStore = create<AppState>((set, get) => ({
     }));
   },
 
+  bulkUpdateErrorState: async (ids, state) => {
+    const updated = await api<ErrorCard[]>('/api/errors', {
+      method: 'PATCH',
+      body: JSON.stringify({ ids, state }),
+    });
+    set((s) => {
+      const updatedMap = new Map(updated.map((e) => [e.id, e]));
+      return {
+        errors: s.errors.map((e) => updatedMap.get(e.id) ?? e),
+        detailCard:
+          s.detailCard?.type === 'error' && updatedMap.has(s.detailCard.card.id)
+            ? { type: 'error', card: updatedMap.get(s.detailCard.card.id)! }
+            : s.detailCard,
+      };
+    });
+  },
+
   deleteError: async (id) => {
     await api('/api/errors', { method: 'DELETE', body: JSON.stringify({ id }) });
     set((s) => ({
@@ -290,5 +314,63 @@ export const useStore = create<AppState>((set, get) => ({
       api<ErrorCard[]>('/api/errors'),
     ]);
     set({ projects, features, errors });
+  },
+
+  // Real-time sync via polling
+  _pollTimer: null,
+
+  syncFromServer: async () => {
+    try {
+      const [projects, features, errors] = await Promise.all([
+        api<Project[]>('/api/projects'),
+        api<FeatureCard[]>('/api/features'),
+        api<ErrorCard[]>('/api/errors'),
+      ]);
+
+      const s = get();
+      // Only update if data actually changed (compare by updatedAt timestamps)
+      const projChanged = JSON.stringify(projects.map((p) => p.updatedAt)) !== JSON.stringify(s.projects.map((p) => p.updatedAt));
+      const featChanged = JSON.stringify(features.map((f) => f.updatedAt)) !== JSON.stringify(s.features.map((f) => f.updatedAt));
+      const errChanged = JSON.stringify(errors.map((e) => e.updatedAt)) !== JSON.stringify(s.errors.map((e) => e.updatedAt));
+
+      if (projChanged || featChanged || errChanged) {
+        const updates: Partial<AppState> = {};
+        if (projChanged) updates.projects = projects;
+        if (featChanged) updates.features = features;
+        if (errChanged) updates.errors = errors;
+
+        // Update detailCard if it was changed on the server
+        if (s.detailCard) {
+          if (s.detailCard.type === 'feature' && featChanged) {
+            const fresh = features.find((f) => f.id === s.detailCard!.card.id);
+            updates.detailCard = fresh ? { type: 'feature', card: fresh } : null;
+          } else if (s.detailCard.type === 'error' && errChanged) {
+            const fresh = errors.find((e) => e.id === s.detailCard!.card.id);
+            updates.detailCard = fresh ? { type: 'error', card: fresh } : null;
+          }
+        }
+
+        set(updates);
+      }
+    } catch {
+      // Silently ignore polling failures (e.g. network blip)
+    }
+  },
+
+  startPolling: () => {
+    const existing = get()._pollTimer;
+    if (existing) return;
+    const timer = setInterval(() => {
+      get().syncFromServer();
+    }, 3000); // Poll every 3 seconds
+    set({ _pollTimer: timer });
+  },
+
+  stopPolling: () => {
+    const timer = get()._pollTimer;
+    if (timer) {
+      clearInterval(timer);
+      set({ _pollTimer: null });
+    }
   },
 }));
