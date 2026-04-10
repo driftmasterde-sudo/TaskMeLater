@@ -115,8 +115,9 @@ export function ErrorsPage() {
     const unfixed = cards.filter((c) => c.state !== 'Fixed');
     if (unfixed.length === 0) return;
     const text = `page "${pageName}":\n${unfixed.map((c) => {
-      const allPrompts = [c.prompt, ...(c.followUpPrompts ?? [])];
-      return allPrompts.map((p) => `- ${p}`).join('\n');
+      const followUps = c.followUpPrompts ?? [];
+      const latestPrompt = followUps.length > 0 ? followUps[followUps.length - 1] : c.prompt;
+      return `- ${latestPrompt}`;
     }).join('\n')}`;
     try {
       await navigator.clipboard.writeText(text);
