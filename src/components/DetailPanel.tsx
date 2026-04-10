@@ -336,7 +336,31 @@ function FeatureForm({ card, labelClass, inputClass, selectClass, updateFeature,
 
       {mockupBlobUrl && (
         <div>
-          <label className={labelClass}>Mockup Preview</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className={labelClass + ' mb-0'}>Mockup Preview</label>
+            <div className="flex items-center gap-2">
+              <a
+                href={mockupBlobUrl}
+                download={`${card.title.replace(/[^a-zA-Z0-9_-]/g, '_')}_mockup.html`}
+                className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:opacity-80 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                  <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                  <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                </svg>
+                Download
+              </a>
+              <button
+                onClick={() => updateFeature(card.id, { mockupHtml: null })}
+                className="inline-flex items-center gap-1 text-xs font-medium text-danger hover:opacity-80 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                  <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
+                </svg>
+                Remove
+              </button>
+            </div>
+          </div>
           <div className="rounded-lg border border-card-border overflow-hidden">
             <iframe
               src={mockupBlobUrl}
