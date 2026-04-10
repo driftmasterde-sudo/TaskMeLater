@@ -30,6 +30,7 @@ export interface ErrorCard {
   projectId: string;
   page: string;
   prompt: string;
+  followUpPrompts: string[];
   priority: Priority;
   state: ErrorState;
   createdAt: string;

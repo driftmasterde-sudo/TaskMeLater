@@ -8,6 +8,7 @@ function mapError(e: Record<string, unknown>) {
     projectId: e.projectId,
     page: e.page,
     prompt: e.prompt,
+    followUpPrompts: (e.followUpPrompts as string[] | undefined) ?? [],
     priority: e.priority,
     state: e.state,
     createdAt: (e.createdAt as Date).toISOString(),
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
     projectId: body.projectId,
     page: body.page,
     prompt: body.prompt,
+    followUpPrompts: body.followUpPrompts ?? [],
     priority: body.priority,
     state: body.state,
   });

@@ -49,7 +49,7 @@ interface AppState {
 
   // Error CRUD
   createError: (projectId: string, page: string, prompt: string) => Promise<void>;
-  updateError: (id: string, updates: Partial<Pick<ErrorCard, 'page' | 'prompt' | 'priority' | 'state'>>) => Promise<void>;
+  updateError: (id: string, updates: Partial<Pick<ErrorCard, 'page' | 'prompt' | 'followUpPrompts' | 'priority' | 'state'>>) => Promise<void>;
   bulkUpdateErrorState: (ids: string[], state: ErrorCard['state']) => Promise<void>;
   deleteError: (id: string) => Promise<void>;
 
@@ -250,6 +250,7 @@ export const useStore = create<AppState>((set, get) => ({
       projectId,
       page,
       prompt,
+      followUpPrompts: [] as string[],
       priority: 'Medium' as const,
       state: 'Not Started' as const,
     };

@@ -5,6 +5,7 @@ export interface IErrorCard {
   projectId: string;
   page: string;
   prompt: string;
+  followUpPrompts: string[];
   priority: string;
   state: string;
   createdAt: Date;
@@ -17,6 +18,7 @@ const ErrorCardSchema = new Schema(
     projectId: { type: String, required: true, index: true },
     page: { type: String, required: true },
     prompt: { type: String, required: true },
+    followUpPrompts: { type: [String], default: [] },
     priority: { type: String, enum: ['Critical', 'High', 'Medium', 'Low'], default: 'Medium' },
     state: { type: String, enum: ['Not Started', 'Implementing', 'Fixed'], default: 'Not Started' },
   },

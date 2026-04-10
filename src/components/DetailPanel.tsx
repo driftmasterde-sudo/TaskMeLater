@@ -131,7 +131,10 @@ export function DetailPanel() {
 
   const copyPrompt = useCallback(async () => {
     if (detailCard?.type !== 'error') return;
-    await navigator.clipboard.writeText(detailCard.card.prompt);
+    const card = detailCard.card;
+    const allPrompts = [card.prompt, ...(card.followUpPrompts ?? [])];
+    const text = allPrompts.map((p, i) => i === 0 ? `- ${p}` : `- [Follow-up #${i}] ${p}`).join('\n');
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [detailCard]);
@@ -378,7 +381,7 @@ function FeatureForm({ card, labelClass, inputClass, selectClass, updateFeature,
 // ---------- Error Form ----------
 
 interface ErrorFormProps {
-  card: { id: string; page: string; prompt: string; priority: Priority; state: ErrorState };
+  card: { id: string; page: string; prompt: string; followUpPrompts: string[]; priority: Priority; state: ErrorState };
   labelClass: string;
   inputClass: string;
   selectClass: string;
@@ -391,6 +394,27 @@ interface ErrorFormProps {
 }
 
 function ErrorForm({ card, labelClass, inputClass, selectClass, updateError, updateProject, activeProjectId, pages, copied, copyPrompt }: ErrorFormProps) {
+  const [addingFollowUp, setAddingFollowUp] = useState(false);
+  const [newFollowUp, setNewFollowUp] = useState('');
+  const followUps = card.followUpPrompts ?? [];
+
+  const addFollowUp = () => {
+    if (!newFollowUp.trim()) return;
+    updateError(card.id, { followUpPrompts: [...followUps, newFollowUp.trim()] });
+    setNewFollowUp('');
+    setAddingFollowUp(false);
+  };
+
+  const removeFollowUp = (index: number) => {
+    updateError(card.id, { followUpPrompts: followUps.filter((_, i) => i !== index) });
+  };
+
+  const updateFollowUp = (index: number, value: string) => {
+    const updated = [...followUps];
+    updated[index] = value;
+    updateError(card.id, { followUpPrompts: updated });
+  };
+
   return (
     <>
       <div>
@@ -412,7 +436,7 @@ function ErrorForm({ card, labelClass, inputClass, selectClass, updateError, upd
       <div>
         <label className={labelClass}>Prompt</label>
         <textarea
-          className={inputClass + ' min-h-[200px] resize-y font-mono text-xs leading-relaxed'}
+          className={inputClass + ' min-h-[120px] resize-y font-mono text-xs leading-relaxed'}
           defaultValue={card.prompt}
           key={card.id + '-prompt'}
           onBlur={(e) => {
@@ -420,6 +444,76 @@ function ErrorForm({ card, labelClass, inputClass, selectClass, updateError, upd
           }}
         />
       </div>
+
+      {/* Follow-up prompts */}
+      {followUps.length > 0 && (
+        <div className="space-y-3">
+          {followUps.map((fp, i) => (
+            <div key={card.id + '-fp-' + i}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-muted uppercase tracking-wide">
+                  Follow-up #{i + 1}
+                </span>
+                <button
+                  onClick={() => removeFollowUp(i)}
+                  className="text-xs text-danger hover:opacity-80 transition"
+                >
+                  Remove
+                </button>
+              </div>
+              <textarea
+                className={inputClass + ' min-h-[80px] resize-y font-mono text-xs leading-relaxed'}
+                defaultValue={fp}
+                key={card.id + '-fp-' + i + '-' + followUps.length}
+                onBlur={(e) => {
+                  if (e.target.value !== fp) updateFollowUp(i, e.target.value);
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add follow-up */}
+      {addingFollowUp ? (
+        <div>
+          <label className="block text-xs font-semibold text-muted mb-1 uppercase tracking-wide">
+            New Follow-up #{followUps.length + 1}
+          </label>
+          <textarea
+            className={inputClass + ' min-h-[80px] resize-y font-mono text-xs leading-relaxed mb-2'}
+            value={newFollowUp}
+            onChange={(e) => setNewFollowUp(e.target.value)}
+            placeholder="Next prompt to try..."
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={addFollowUp}
+              disabled={!newFollowUp.trim()}
+              className="text-xs font-medium bg-accent text-white rounded-lg px-3 py-1.5 hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add
+            </button>
+            <button
+              onClick={() => { setAddingFollowUp(false); setNewFollowUp(''); }}
+              className="text-xs font-medium text-muted hover:bg-muted-bg rounded-lg px-3 py-1.5 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAddingFollowUp(true)}
+          className="w-full py-2 rounded-lg text-sm font-medium text-accent border border-dashed border-accent/40 hover:bg-accent/5 transition flex items-center justify-center gap-1.5"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+          </svg>
+          Add Next Prompt
+        </button>
+      )}
 
       <button
         onClick={copyPrompt}

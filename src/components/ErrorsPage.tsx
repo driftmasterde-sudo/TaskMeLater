@@ -114,7 +114,10 @@ export function ErrorsPage() {
   const handleCopyAllPrompts = useCallback(async (pageName: string, cards: ErrorCard[]) => {
     const unfixed = cards.filter((c) => c.state !== 'Fixed');
     if (unfixed.length === 0) return;
-    const text = `page "${pageName}":\n${unfixed.map((c) => `- ${c.prompt}`).join('\n')}`;
+    const text = `page "${pageName}":\n${unfixed.map((c) => {
+      const allPrompts = [c.prompt, ...(c.followUpPrompts ?? [])];
+      return allPrompts.map((p) => `- ${p}`).join('\n');
+    }).join('\n')}`;
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -403,9 +406,16 @@ export function ErrorsPage() {
                       </p>
 
                       <div className="flex items-center justify-between mt-auto pt-2">
-                        <span className="text-xs text-muted">
-                          {formatDate(card.createdAt)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted">
+                            {formatDate(card.createdAt)}
+                          </span>
+                          {(card.followUpPrompts?.length ?? 0) > 0 && (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-accent">
+                              +{card.followUpPrompts.length} follow-up{card.followUpPrompts.length > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleCopy(card); }}
                           aria-label="Copy prompt to clipboard"
